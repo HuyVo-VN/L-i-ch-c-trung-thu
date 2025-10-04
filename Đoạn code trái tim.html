@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <title>Pháo hoa trái tim + chữ xoay nhiều tầng</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- Font đẹp từ Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+  <style>
+    html,body {
+      margin:0;
+      height:100%;
+      background:#000;
+      overflow:hidden;
+    }
+    #info {
+      position: absolute;
+      left: 50%;
+      top: 10px;
+      transform: translateX(-50%);
+      z-index: 2;
+      font-family: 'Pacifico', cursive;
+      color: #ffd86b;
+      text-shadow: 0 0 12px #ff5ea4;
+      background: rgba(0,0,0,0.25);
+      padding: 10px 16px;
+      border-radius: 10px;
+      font-size: 20px;
+    }
+  </style>
+</head>
+<body>
+<div id="info">Click màn hình để tạo pháo hoa trái tim 🎆</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js"></script>
+<script>
+// ===== Scene setup =====
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 1000);
+camera.position.set(0, 8, 60);
+const renderer = new THREE.WebGLRenderer({antialias:true});
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+document.body.appendChild(renderer.domElement);
+scene.add(new THREE.AmbientLight(0xffffff, 0.9));
+
+// ===== Particle system =====
+const MAX_PARTICLES = 15000;
+const posArray = new Float32Array(MAX_PARTICLES * 3);
+const velArray = new Float32Array(MAX_PARTICLES * 3);
+const lifeArray = new Float32Array(MAX_PARTICLES);
+const startLifeArray = new Float32Array(MAX_PARTICLES);
+const baseColorArray = new Float32Array(MAX_PARTICLES * 3);
+const particleGeom = new THREE.BufferGeometry();
+particleGeom.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+const colorAttr = new THREE.BufferAttribute(new Float32Array(MAX_PARTICLES * 3), 3);
+particleGeom.setAttribute('color', colorAttr);
+
+function createSparkTexture() {
+  const size = 64;
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d");
+  const gradient = ctx.createRadialGradient(size/2, size/2, 5, size/2, size/2, size/2);
+  gradient.addColorStop(0, "rgba(255,255,255,1)");
+  gradient.addColorStop(0.3, "rgba(255,150,200,0.8)");
+  gradient.addColorStop(1, "rgba(255,0,100,0)");
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0,0,size,size);
+  return new THREE.CanvasTexture(canvas);
+}
+const sparkTexture = createSparkTexture();
+const particleMat = new THREE.PointsMaterial({
+  size: 1.2, // ✅ hạt to hơn
+  vertexColors: true,
+  transparent: true,
+  opacity: 0.95,
+  blending: THREE.AdditiveBlending,
+  depthWrite: false,
+  map: sparkTexture
+});
+const points = new THREE.Points(particleGeom, particleMat);
+scene.add(points);
+
+let poolIndex = 0;
+const COLORS = [
+  [1.0, 0.5, 0.7],
+  [1.0, 0.8, 0.5],
+  [0.9, 0.6, 0.9],
+  [0.9, 0.4, 0.7],
+  [1.0, 1.0, 0.7]
+];
+
+function heartParam(t) {
+  const x = 16 * Math.pow(Math.sin(t), 3);
+  const y = 13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t);
+  return { x, y };
+}
+
+function spawnParticle(x,y,z, vx,vy,vz, life, r,g,b) {
+  const i = poolIndex % MAX_PARTICLES;
+  const offset = i * 3;
+  posArray[offset] = x;
+  posArray[offset+1] = y;
+  posArray[offset+2] = z;
+  velArray[offset] = vx;
+  velArray[offset+1] = vy;
+  velArray[offset+2] = vz;
+  lifeArray[i] = life;
+  startLifeArray[i] = life;
+  baseColorArray[offset] = r;
+  baseColorArray[offset+1] = g;
+  baseColorArray[offset+2] = b;
+  colorAttr.array[offset] = r;
+  colorAttr.array[offset+1] = g;
+  colorAttr.array[offset+2] = b;
+  poolIndex++;
+}
+
+function spawnHeartExplosion(x,y,z, count=2000, power=0.18) { // ✅ pháo hoa to hơn
+  for (let i=0;i<count;i++) {
+    const t = Math.random() * Math.PI * 2;
+    const h = heartParam(t);
+    const nx = h.x / 16;
+    const ny = h.y / 17;
+    const randScale = 0.7 + Math.random()*1.3;
+    const vx = nx * power * randScale;
+    const vy = ny * power * randScale;
+    const vz = (Math.random()-0.5) * 0.12 * randScale;
+    const life = 120 + Math.random() * 130;
+    const palette = COLORS[Math.floor(Math.random()*COLORS.length)];
+    spawnParticle(x,y,z, vx, vy, vz, life, palette[0], palette[1], palette[2]);
+  }
+}
+
+// ===== Rockets =====
+const rockets = [];
+function launchRocket(x= (Math.random()-0.5)*6, z= (Math.random()-0.5)*4) {
+  const startY = -28;
+  const vy = 0.7 + Math.random()*0.4;
+  const explodeAt = -2 + Math.random()*26;
+  rockets.push({x, y:startY, z, vy, vx:(Math.random()-0.5)*0.03, explodeAt});
+}
+window.addEventListener('click', ()=> launchRocket());
+
+// ===== Text Rings =====
+const ringGroup = new THREE.Group();
+scene.add(ringGroup);
+
+function makeCharSprite(char, fontSize=80) {
+  const size = 128;
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = "#ffd86b";
+  ctx.shadowColor = "#ff5ea4";
+  ctx.shadowBlur = 18;
+  ctx.font = `${fontSize}px 'Pacifico', cursive`;
+  ctx.fillText(char, size/2, size/2 + 6);
+  const tex = new THREE.CanvasTexture(canvas);
+  const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
+  const sprite = new THREE.Sprite(mat);
+  sprite.scale.set(3.2, 3.2, 1);
+  return sprite;
+}
+
+function createTextRings(message, layers=3) {
+  ringGroup.clear();
+  const baseRadius = 15;
+  const y = -12;
+  for (let l=0; l<layers; l++) {
+    const sub = new THREE.Group();
+    const chars = message.split('').reverse();
+    const len = chars.length;
+    const radius = baseRadius - l*6;
+    for (let i=0;i<len;i++) {
+      const sprite = makeCharSprite(chars[i], 64);
+      const angle = (i / len) * Math.PI * 2;
+      sprite.position.set(Math.cos(angle) * radius, y, Math.sin(angle) * radius);
+      sub.add(sprite);
+    }
+    sub.userData = { speed: -(0.004 + l*0.001) }; // ✅ xoay ngược chiều
+    ringGroup.add(sub);
+  }
+}
+createTextRings("❤️Chúc em bé Chúccc✨ ❣️Trung Thu vui vẻ, an lành và hạnh phúc❣️ ", 3);
+
+// ===== Small hearts system =====
+const smallHearts = [];
+function makeHeartSprite() {
+  const size = 64;
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d");
+  ctx.fillStyle = "#ff5ea4";
+  ctx.font = "48px Arial";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("❤", size/2, size/2);
+  const tex = new THREE.CanvasTexture(canvas);
+  const mat = new THREE.SpriteMaterial({ map: tex, transparent:true });
+  const sprite = new THREE.Sprite(mat);
+  sprite.scale.set(3,3,1); // ✅ trái tim nhỏ to hơn
+  return sprite;
+}
+function spawnSmallHeart(x,y,z) {
+  const sprite = makeHeartSprite();
+  sprite.position.set(x,y,z);
+  sprite.userData = { 
+    vy: 0.05 + Math.random()*0.03, 
+    vx: (Math.random()-0.5) * 0.05, // ✅ bay tỏa 2 bên
+    life: 120 
+  };
+  scene.add(sprite);
+  smallHearts.push(sprite);
+}
+
+// ===== Update =====
+function updateParticles() {
+  for (let i=0;i<MAX_PARTICLES;i++) {
+    if (lifeArray[i] > 0) {
+      const o = i*3;
+      velArray[o+1] -= 0.0009;
+      posArray[o] += velArray[o];
+      posArray[o+1] += velArray[o+1];
+      posArray[o+2] += velArray[o+2];
+      lifeArray[i] -= 1;
+      const fade = Math.max(lifeArray[i] / startLifeArray[i], 0);
+      colorAttr.array[o] = baseColorArray[o] * fade;
+      colorAttr.array[o+1] = baseColorArray[o+1] * fade;
+      colorAttr.array[o+2] = baseColorArray[o+2] * fade;
+      if (lifeArray[i] <= 0) {
+        colorAttr.array[o] = colorAttr.array[o+1] = colorAttr.array[o+2] = 0;
+      }
+    }
+  }
+  particleGeom.attributes.position.needsUpdate = true;
+  particleGeom.attributes.color.needsUpdate = true;
+}
+
+function updateRockets() {
+  for (let i = rockets.length-1; i>=0; i--) {
+    const r = rockets[i];
+    r.x += r.vx;
+    r.y += r.vy;
+    r.vy -= 0.01;
+    const trailCol = [1,0.8,0.5];
+    spawnParticle(r.x, r.y, r.z, (Math.random()-0.5)*0.05, 0.03, (Math.random()-0.5)*0.05, 25, trailCol[0], trailCol[1], trailCol[2]);
+    if (Math.random()<0.05) spawnSmallHeart(r.x, r.y, r.z);
+    if (r.y >= r.explodeAt) {
+      spawnHeartExplosion(r.x, r.y, r.z, 2000, 0.18);
+      rockets.splice(i,1);
+    }
+  }
+}
+
+function updateSmallHearts() {
+  for (let i=smallHearts.length-1; i>=0; i--) {
+    const h = smallHearts[i];
+    h.position.y += h.userData.vy;
+    h.position.x += h.userData.vx; // ✅ lan sang ngang
+    h.userData.life--;
+    h.material.opacity = h.userData.life/120;
+    if (h.userData.life<=0) {
+      scene.remove(h);
+      smallHearts.splice(i,1);
+    }
+  }
+}
+
+function animate() {
+  requestAnimationFrame(animate);
+  updateRockets();
+  updateParticles();
+  updateSmallHearts();
+  ringGroup.children.forEach(child => {
+    child.rotation.y += child.userData.speed;
+  });
+  renderer.render(scene, camera);
+}
+animate();
+
+window.addEventListener('resize', ()=> {
+  camera.aspect = window.innerWidth/window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+// auto rockets
+setTimeout(()=> launchRocket(0, 0), 500);
+setTimeout(()=> launchRocket(-3, 0), 1500);
+setTimeout(()=> launchRocket(2.5, 0), 2500);
+</script>
+</body>
+</html>
