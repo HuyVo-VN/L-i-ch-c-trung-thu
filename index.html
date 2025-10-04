@@ -13,24 +13,10 @@
       background:#000;
       overflow:hidden;
     }
-    #info {
-      position: absolute;
-      left: 50%;
-      top: 10px;
-      transform: translateX(-50%);
-      z-index: 2;
-      font-family: 'Pacifico', cursive;
-      color: #ffd86b;
-      text-shadow: 0 0 12px #ff5ea4;
-      background: rgba(0,0,0,0.25);
-      padding: 10px 16px;
-      border-radius: 10px;
-      font-size: 20px;
-    }
   </style>
 </head>
 <body>
-<div id="info">Click màn hình để tạo pháo hoa trái tim 🎆</div>
+<!-- Đã bỏ dòng chữ thông báo -->
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js"></script>
 <script>
@@ -72,7 +58,7 @@ function createSparkTexture() {
 }
 const sparkTexture = createSparkTexture();
 const particleMat = new THREE.PointsMaterial({
-  size: 1.2, // ✅ hạt to hơn
+  size: 1.2,
   vertexColors: true,
   transparent: true,
   opacity: 0.95,
@@ -118,7 +104,7 @@ function spawnParticle(x,y,z, vx,vy,vz, life, r,g,b) {
   poolIndex++;
 }
 
-function spawnHeartExplosion(x,y,z, count=2000, power=0.18) { // ✅ pháo hoa to hơn
+function spawnHeartExplosion(x,y,z, count=2000, power=0.18) {
   for (let i=0;i<count;i++) {
     const t = Math.random() * Math.PI * 2;
     const h = heartParam(t);
@@ -142,7 +128,14 @@ function launchRocket(x= (Math.random()-0.5)*6, z= (Math.random()-0.5)*4) {
   const explodeAt = -2 + Math.random()*26;
   rockets.push({x, y:startY, z, vy, vx:(Math.random()-0.5)*0.03, explodeAt});
 }
-window.addEventListener('click', ()=> launchRocket());
+
+// ❌ bỏ click
+// window.addEventListener('click', ()=> launchRocket());
+
+// ✅ tự động bắn mỗi 1.5 giây
+setInterval(() => {
+  launchRocket();
+}, 1500);
 
 // ===== Text Rings =====
 const ringGroup = new THREE.Group();
@@ -183,7 +176,7 @@ function createTextRings(message, layers=3) {
       sprite.position.set(Math.cos(angle) * radius, y, Math.sin(angle) * radius);
       sub.add(sprite);
     }
-    sub.userData = { speed: -(0.004 + l*0.001) }; // ✅ xoay ngược chiều
+    sub.userData = { speed: -(0.004 + l*0.001) };
     ringGroup.add(sub);
   }
 }
@@ -205,7 +198,7 @@ function makeHeartSprite() {
   const tex = new THREE.CanvasTexture(canvas);
   const mat = new THREE.SpriteMaterial({ map: tex, transparent:true });
   const sprite = new THREE.Sprite(mat);
-  sprite.scale.set(3,3,1); // ✅ trái tim nhỏ to hơn
+  sprite.scale.set(3,3,1);
   return sprite;
 }
 function spawnSmallHeart(x,y,z) {
@@ -213,7 +206,7 @@ function spawnSmallHeart(x,y,z) {
   sprite.position.set(x,y,z);
   sprite.userData = { 
     vy: 0.05 + Math.random()*0.03, 
-    vx: (Math.random()-0.5) * 0.05, // ✅ bay tỏa 2 bên
+    vx: (Math.random()-0.5) * 0.05,
     life: 120 
   };
   scene.add(sprite);
@@ -263,7 +256,7 @@ function updateSmallHearts() {
   for (let i=smallHearts.length-1; i>=0; i--) {
     const h = smallHearts[i];
     h.position.y += h.userData.vy;
-    h.position.x += h.userData.vx; // ✅ lan sang ngang
+    h.position.x += h.userData.vx;
     h.userData.life--;
     h.material.opacity = h.userData.life/120;
     if (h.userData.life<=0) {
@@ -291,11 +284,10 @@ window.addEventListener('resize', ()=> {
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-// auto rockets
+// vẫn giữ vài quả auto đầu tiên
 setTimeout(()=> launchRocket(0, 0), 500);
 setTimeout(()=> launchRocket(-3, 0), 1500);
 setTimeout(()=> launchRocket(2.5, 0), 2500);
 </script>
 </body>
 </html>
-
