@@ -1,0 +1,12 @@
+D:\L-i-ch-c-trung-thu\TestGit\obj\Debug\net8.0\TestGit.GeneratedMSBuildEditorConfig.editorconfig
+D:\L-i-ch-c-trung-thu\TestGit\obj\Debug\net8.0\TestGit.AssemblyInfoInputs.cache
+D:\L-i-ch-c-trung-thu\TestGit\obj\Debug\net8.0\TestGit.AssemblyInfo.cs
+D:\L-i-ch-c-trung-thu\TestGit\obj\Debug\net8.0\TestGit.csproj.CoreCompileInputs.cache
+D:\L-i-ch-c-trung-thu\TestGit\obj\Debug\net8.0\TestGit.sourcelink.json
+D:\L-i-ch-c-trung-thu\TestGit\bin\Debug\net8.0\TestGit.deps.json
+D:\L-i-ch-c-trung-thu\TestGit\bin\Debug\net8.0\TestGit.dll
+D:\L-i-ch-c-trung-thu\TestGit\bin\Debug\net8.0\TestGit.pdb
+D:\L-i-ch-c-trung-thu\TestGit\obj\Debug\net8.0\TestGit.dll
+D:\L-i-ch-c-trung-thu\TestGit\obj\Debug\net8.0\refint\TestGit.dll
+D:\L-i-ch-c-trung-thu\TestGit\obj\Debug\net8.0\TestGit.pdb
+D:\L-i-ch-c-trung-thu\TestGit\obj\Debug\net8.0\ref\TestGit.dll
